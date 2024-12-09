@@ -1,6 +1,6 @@
 def run():
-    # fileName = "../day1.test"
-    fileName = "../day1.input"
+    # fileName = "day1.test"
+    fileName = "day1.input"
     with open(fileName, "r") as inputFile:
         lines = inputFile.readlines()
         left = []

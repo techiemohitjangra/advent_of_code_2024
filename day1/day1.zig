@@ -3,8 +3,8 @@ const expect = std.testing.expect;
 
 pub fn main() !void {
     const inputFile: std.fs.File = try std.fs.cwd().openFile(
-        "../day1.input",
-        // "../test.txt",
+        "day1.input",
+        // "test.txt",
         std.fs.File.OpenFlags{
             .mode = .read_only,
         },

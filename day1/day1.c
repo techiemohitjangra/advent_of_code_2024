@@ -1,4 +1,5 @@
-#include <ctype.h>
+#include <assert.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,18 +7,35 @@
 
 typedef enum { false, true } bool;
 
+void swap(int64_t *first, int64_t *second) {
+    int64_t temp = *first;
+    *first = *second;
+    *second = temp;
+}
+
+void bubble_sort(int64_t *arr, size_t len) {
+    for (int i = 0; i < len; i++) {
+        for (int j = i; j < len; j++) {
+            if (arr[i] > arr[j]) {
+                swap(&arr[i], &arr[j]);
+            }
+        }
+    }
+}
+
 typedef struct {
     int64_t *items;
     size_t len;
     size_t cap;
 } arraylist_t;
 
-void append_arraylist_t(arraylist_t *al, size_t value);
-int64_t get_arraylist_t(arraylist_t *al, size_t index);
-void init_arraylist(arraylist_t *al, size_t cap);
-void deinit_arraylist(arraylist_t *al);
+void init_arraylist_t(arraylist_t *const al, const size_t cap);
+void append_arraylist_t(arraylist_t *const al, const size_t value);
+int64_t get_arraylist_t(arraylist_t *const al, const size_t index);
+void deinit_arraylist_t(arraylist_t *const al);
+void print_arraylist_t(arraylist_t *const al);
 
-void init_arraylist(arraylist_t *al, size_t cap) {
+void init_arraylist_t(arraylist_t *const al, const size_t cap) {
     int64_t *arr = (int64_t *)malloc(cap * sizeof(int64_t));
     if (arr == NULL) {
         exit(EXIT_FAILURE);
@@ -27,110 +45,129 @@ void init_arraylist(arraylist_t *al, size_t cap) {
     al->items = arr;
 }
 
-void deinit_arraylist(arraylist_t *al) { free(al->items); }
-
-void append_arraylist_t(arraylist_t *al, size_t value) {
+void append_arraylist_t(arraylist_t *const al, const size_t value) {
     if (al->len >= al->cap) {
         int64_t *arr = (int64_t *)malloc(al->cap * 2 * sizeof(int64_t));
         if (arr == NULL) {
             exit(EXIT_FAILURE);
         }
         al->cap *= 2;
-        al->items = arr;
+        memcpy(arr, al->items, sizeof(int64_t) * al->len);
         free(al->items);
+        al->items = arr;
     }
     al->items[al->len++] = value;
 }
 
-int64_t get_arraylist_t(arraylist_t *al, size_t index) {
+int64_t get_arraylist_t(arraylist_t *const al, const size_t index) {
     if (index >= al->len) {
         exit(EXIT_FAILURE);
     }
     return al->items[index];
 }
 
-int main() {
-    char *fileName = "../day1.input";
-    FILE *file = fopen(fileName, "r");
-    if (file == NULL) {
-        return EXIT_FAILURE;
+void deinit_arraylist_t(arraylist_t *const al) {
+    free(al->items);
+    al->items = NULL;
+}
+
+void print_arraylist_t(arraylist_t *const al) {
+    for (size_t i = 0; i < al->len; i++) {
+        printf("%ld, ", al->items[i]);
     }
+    printf("\n");
+}
 
-    if (fseek(file, 0, SEEK_END) == -1) {
-        return EXIT_FAILURE;
-    }
+void test_array_t() {
+    arraylist_t arr;
+    init_arraylist_t(&arr, 2);
+    assert(arr.len == 0);
+    assert(arr.cap == 2);
+    printf("Array:\nlen: %lu\ncap: %lu\n", arr.len, arr.cap);
+    append_arraylist_t(&arr, 1);
+    append_arraylist_t(&arr, 2);
+    append_arraylist_t(&arr, 3);
+    append_arraylist_t(&arr, 4);
+    append_arraylist_t(&arr, 5);
+    print_arraylist_t(&arr);
+    printf("Array:\nlen: %lu\ncap: %lu\n", arr.len, arr.cap);
+    assert(get_arraylist_t(&arr, 0) == 1);
+    assert(get_arraylist_t(&arr, 1) == 2);
+    assert(get_arraylist_t(&arr, 2) == 3);
+    assert(get_arraylist_t(&arr, 3) == 4);
+    assert(get_arraylist_t(&arr, 4) == 5);
+    assert(arr.len == 5);
+    assert(arr.cap == 8);
+    deinit_arraylist_t(&arr);
+    assert(arr.items == NULL);
+}
 
-    size_t file_size = ftell(file);
-    if (file_size == -1) {
-        return EXIT_FAILURE;
-    }
-
-    rewind(file);
-
-    uint8_t *input_data = (uint8_t *)malloc(file_size * sizeof(uint8_t));
-    if (input_data == NULL) {
-        return EXIT_FAILURE;
-    }
-
-    size_t read_size = fread(input_data, 1, file_size, file);
-    if (read_size != file_size) {
-        return EXIT_FAILURE;
-    }
-    input_data[file_size] = '\0';
-
-    arraylist_t right, left;
-
-    init_arraylist(&right, 1000);
-    init_arraylist(&left, 1000);
-
-    // TODO: parse numbers from input_data
-    char *buffer;
-    char *temp = (char *)malloc(sizeof(char) * 6);
-    if (!temp) {
+void test() {
+    char *testFile = "day1.test";
+    FILE *file = fopen(testFile, "r");
+    if (!file) {
+        fprintf(stderr, "filed to open file with error no: %d\n", errno);
         exit(EXIT_FAILURE);
     }
-    buffer = temp;
-    bool toggle = true;
-    size_t count = 0;
-    char *test;
-    char *temp2 = (char *)malloc(sizeof(char) * 6);
-    if (!temp) {
-        exit(EXIT_FAILURE);
-    }
-    test = temp2;
-    char *endptr;
-    for (int i = 0; i < read_size; ++i) {
-        if (isdigit(input_data[i])) {
-            buffer[count] = i;
-            count++;
-        } else {
-            if (memcmp(&buffer, &test, 6) == 0) {
-                count = 0;
-                continue;
-            }
-            buffer[5] = '\0';
-            printf("%s", buffer);
-            int64_t num = strtoll(buffer, &endptr, 10);
-            if (toggle) {
-                append_arraylist_t(&left, num);
-            } else {
-                append_arraylist_t(&right, num);
-            }
-            toggle = !toggle;
-            count = 0;
-            memset(buffer, 0, 6);
-        }
-    }
 
-    // for (int i = 0; i < 1000; i++) {
-    //     printf("%ld\n", right.items[i]);
-    // }
+    int64_t left_num, right_num;
+    arraylist_t left, right;
 
-    // deinit_arraylist(&right);
-    // deinit_arraylist(&left);
-    free(test);
-    free(buffer);
-    free(input_data);
-    input_data = NULL;
+    init_arraylist_t(&left, 6);
+    init_arraylist_t(&right, 6);
+
+    while (fscanf(file, "%ld %ld", &left_num, &right_num) > 0) {
+        append_arraylist_t(&left, left_num);
+        append_arraylist_t(&right, right_num);
+    };
+
+    print_arraylist_t(&left);
+    print_arraylist_t(&right);
+    printf("\n");
+    for (size_t i = 0; i < left.len; ++i) {
+        int64_t ln = get_arraylist_t(&left, i);
+        int64_t rn = get_arraylist_t(&right, i);
+        printf("%ld %ld\n", ln, rn);
+    }
+    printf("\n");
+
+    deinit_arraylist_t(&left);
+    deinit_arraylist_t(&right);
     fclose(file);
+}
+
+int main() {
+    // test_array_t();
+    // test();
+    char *inputFile = "day1.input";
+    FILE *file = fopen(inputFile, "r");
+
+    int64_t left_num, right_num;
+    arraylist_t left, right;
+
+    init_arraylist_t(&left, 1000);
+    init_arraylist_t(&right, 1000);
+
+    while (fscanf(file, "%ld %ld", &left_num, &right_num) > 0) {
+        append_arraylist_t(&left, left_num);
+        append_arraylist_t(&right, right_num);
+    };
+
+    // TODO: sort arraylist_t left and right
+    bubble_sort(left.items, left.len);
+    bubble_sort(right.items, right.len);
+
+    int64_t res = 0;
+    for (size_t i = 0; i < left.len; ++i) {
+        int64_t ln, rn;
+        ln = get_arraylist_t(&left, i);
+        rn = get_arraylist_t(&right, i);
+        res += labs(rn - ln);
+    }
+    printf("total distance: %ld\n", res);
+
+    deinit_arraylist_t(&left);
+    deinit_arraylist_t(&right);
+    fclose(file);
+    return 0;
 }
