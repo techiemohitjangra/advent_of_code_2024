@@ -141,6 +141,7 @@ int main() {
     // test();
     char *inputFile = "day1.input";
     FILE *file = fopen(inputFile, "r");
+    int32_t dict[100000] = {0};
 
     int64_t left_num, right_num;
     arraylist_t left, right;
@@ -151,6 +152,7 @@ int main() {
     while (fscanf(file, "%ld %ld", &left_num, &right_num) > 0) {
         append_arraylist_t(&left, left_num);
         append_arraylist_t(&right, right_num);
+        dict[right_num] += 1;
     };
 
     // TODO: sort arraylist_t left and right
@@ -158,13 +160,16 @@ int main() {
     bubble_sort(right.items, right.len);
 
     int64_t res = 0;
+    int64_t res2 = 0;
     for (size_t i = 0; i < left.len; ++i) {
         int64_t ln, rn;
         ln = get_arraylist_t(&left, i);
         rn = get_arraylist_t(&right, i);
         res += labs(rn - ln);
+        res2 += labs(ln * dict[ln]);
     }
     printf("total distance: %ld\n", res);
+    printf("total similarity: %ld\n", res2);
 
     deinit_arraylist_t(&left);
     deinit_arraylist_t(&right);
