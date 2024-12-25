@@ -5,9 +5,12 @@ zig: clean
 	@zig build-exe -OReleaseSmall day01.zig
 	@day01
 
-zigtest: clean
-	@zig test -OReleaseSmall day01.zig -lc
+zigdebug: clean
+	@zig build-exe day01.zig
 	@day01
+
+zigtest: clean
+	@zig test -OReleaseSmall day01.zig
 
 c: clean
 	@gcc -Os day01.c -o day01
