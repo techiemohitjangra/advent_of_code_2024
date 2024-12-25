@@ -237,7 +237,7 @@ pub fn main() !void {
     std.debug.print("Part1: {d}\n", .{part1Solution});
 
     const part2Solution: i32 = part2(input);
-    // assert(part1Solution == 2496);
+    assert(part1Solution == 1967);
     std.debug.print("Part2: {d}\n", .{part2Solution});
 }
 
@@ -261,5 +261,5 @@ test "part2" {
     defer test_allocator.free(input);
 
     const part2Solution: i32 = part2(input);
-    std.debug.print("part2: {d}\n", .{part2Solution});
+    try expect(part2Solution == 1967);
 }
