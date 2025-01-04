@@ -9,6 +9,7 @@ fn read_data(allocator: *std.mem.Allocator, fileName: []const u8) ![]u8 {
             .mode = .read_only,
         },
     );
+    defer file.close;
 
     const file_stats = try file.stat();
     const buffer: []u8 = try allocator.alloc(u8, file_stats.size);
