@@ -1,5 +1,6 @@
 const std = @import("std");
 const assert = std.debug.assert;
+const expect = std.testing.expect;
 
 pub fn read_data(allocator: *std.mem.Allocator, fileName: []const u8) ![]const u8 {
     const file: std.fs.File = std.fs.cwd().openFile(
@@ -127,11 +128,6 @@ test {
         }
         test_allocator.free(level_records);
     }
-
-    for (level_records) |levels| {
-        for (levels) |level| {
-            std.debug.print("{d} ", .{level});
-        }
-        std.debug.print("\n", .{});
-    }
+    const solutionPart1 = part1(level_records);
+    try expect(solutionPart1 == 2);
 }
