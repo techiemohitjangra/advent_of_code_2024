@@ -2,9 +2,16 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const Thread = std.Thread;
 
-const Direction = packed struct {
+const DirectionOffset = packed struct {
     dx: i2,
     dy: i2,
+};
+
+const Direction = enum(u2) {
+    Up = 0,
+    Right = 1,
+    Down = 2,
+    Left = 3,
 };
 
 const CellState = enum(u2) { Empty, Guard, Obstacle };
@@ -15,10 +22,10 @@ const Position = struct {
 };
 
 const Puzzle = struct {
-    pub const directions: [4]Direction = [4]Direction{
-        .{ .dx = 0, .dy = -1 }, // top (x, y)
+    pub const directions: [4]DirectionOffset = [4]DirectionOffset{
+        .{ .dx = 0, .dy = -1 }, // up (x, y)
         .{ .dx = 1, .dy = 0 }, // right (x, y)
-        .{ .dx = 0, .dy = 1 }, // bottom (x, y)
+        .{ .dx = 0, .dy = 1 }, // down (x, y)
         .{ .dx = -1, .dy = 0 }, // left (x, y)
     };
 
@@ -28,34 +35,31 @@ const Puzzle = struct {
     start: Position,
     next: Position,
     current: Position,
-    direction_index: usize,
+    direction: Direction,
     out_of_bound: bool,
-    visited_positions: std.hash_map.HashMap(Position, usize, std.hash_map.AutoContext(Position), 80),
-    visited_list: std.ArrayList(Position),
+    visited_positions: std.hash_map.HashMap(Position, Direction, std.hash_map.AutoContext(Position), 80),
     allocator: *Allocator,
 
     pub fn init(allocator: *Allocator, filename: []const u8) !Puzzle {
-        const arrayList = std.ArrayList(Position).init(allocator.*);
         const data: []u8 = try Puzzle.read_data(allocator.*, filename);
         var map: [][]CellState = try Puzzle.parse_matrix(allocator.*, data);
         const start_position: Position = try Puzzle.get_start_position(&map);
-        const direction_index = 0;
+        const direction: Direction = .Up;
         const next_position = Position{
-            .x = start_position.x + Puzzle.directions[direction_index].dx,
-            .y = start_position.y + Puzzle.directions[direction_index].dy,
+            .x = start_position.x + Puzzle.directions[@intFromEnum(direction)].dx,
+            .y = start_position.y + Puzzle.directions[@intFromEnum(direction)].dy,
         };
 
         return Puzzle{
-            .visited_list = arrayList,
             .source_file = filename,
             .data = data,
             .map = map,
             .start = start_position,
             .current = start_position,
             .next = next_position,
-            .direction_index = 0,
+            .direction = direction,
             .out_of_bound = false,
-            .visited_positions = std.hash_map.HashMap(Position, usize, std.hash_map.AutoContext(Position), 80).init(allocator.*),
+            .visited_positions = std.hash_map.HashMap(Position, Direction, std.hash_map.AutoContext(Position), 80).init(allocator.*),
             .allocator = allocator,
         };
     }
@@ -66,7 +70,6 @@ const Puzzle = struct {
             self.allocator.free(row);
         }
         self.allocator.free(self.map);
-        self.visited_list.deinit();
         self.visited_positions.deinit();
     }
 
@@ -75,7 +78,14 @@ const Puzzle = struct {
             for (row) |cell| {
                 var char: u8 = undefined;
                 switch (cell) {
-                    .Guard => char = '^',
+                    .Guard => {
+                        switch (self.direction) {
+                            .Up => char = '^',
+                            .Right => char = '>',
+                            .Down => char = 'v',
+                            .Left => char = '<',
+                        }
+                    },
                     .Empty => char = '.',
                     .Obstacle => char = '#',
                 }
@@ -85,41 +95,47 @@ const Puzzle = struct {
         }
     }
 
-    pub fn reset_positions(self: *Puzzle) !void {
+    pub fn animate(self: *const Puzzle) void {
+        std.debug.print("\x1B[2J\x1B[H", .{});
+        self.print();
+        std.time.sleep(100 * 1000 * 1000);
+    }
+
+    pub fn reset_positions(self: *Puzzle) void {
         self.map[@as(usize, @intCast(self.current.y))][@as(usize, @intCast(self.current.x))] = .Empty;
-        self.direction_index = 0;
+        self.direction = .Up;
         self.current = self.start;
         self.next = Position{
-            .x = self.start.x + Puzzle.directions[self.direction_index].dx,
-            .y = self.start.y + Puzzle.directions[self.direction_index].dy,
+            .x = self.current.x + Puzzle.directions[@intFromEnum(self.direction)].dx,
+            .y = self.current.y + Puzzle.directions[@intFromEnum(self.direction)].dy,
         };
     }
 
     pub fn count_unique_positions_visited(self: *Puzzle) !usize {
         while (0 <= self.next.x and self.next.x < self.map[0].len and 0 <= self.next.y and self.next.y < self.map.len) {
-            self.move_forward();
-            if (self.visited_positions.get(self.current)) |_| {} else {
-                try self.visited_list.append(self.current);
+            if (self.map[@as(usize, @intCast(self.next.y))][@as(usize, @intCast(self.next.x))] == .Obstacle) {
+                self.rotate();
+            } else {
+                self.move_forward();
+                try self.visited_positions.put(self.current, self.direction);
             }
-            try self.visited_positions.put(self.current, self.direction_index);
         }
         return self.visited_positions.count();
     }
 
     pub fn count_possible_loops_optimized(self: *Puzzle) !usize {
         var loop_count: usize = 0;
-        // var hash_map_iterator = self.visited_positions.iterator();
-        // while (hash_map_iterator.next()) |item| {
-        for (self.visited_list.items) |item| {
-            if (std.meta.eql(item, self.start)) continue; // skip starting position
-            const y = item.y;
-            const x = item.x;
+        var visited_position_iterator = self.visited_positions.iterator();
+        while (visited_position_iterator.next()) |item| {
+            const x = item.key_ptr.x;
+            const y = item.key_ptr.y;
+            if (self.start.x == x and self.start.y == y) continue;
             self.map[@as(usize, @intCast(y))][@as(usize, @intCast(x))] = .Obstacle;
             if (try self.has_loop()) {
                 loop_count += 1;
             }
-            try self.reset_positions();
             self.map[@as(usize, @intCast(y))][@as(usize, @intCast(x))] = .Empty;
+            self.reset_positions();
         }
         return loop_count;
     }
@@ -129,51 +145,54 @@ const Puzzle = struct {
         for (self.map, 0..) |row, y| {
             for (row, 0..) |cell, x| {
                 if (cell == .Obstacle or cell == .Guard) continue;
-                self.direction_index = 0;
-                self.map[@as(usize, @intCast(y))][@as(usize, @intCast(x))] = .Obstacle;
+                if (self.start.x == x and self.start.y == y) continue;
+                self.map[y][x] = .Obstacle;
                 if (try self.has_loop()) {
                     loop_count += 1;
                 }
-                try self.reset_positions();
-                self.map[@as(usize, @intCast(y))][@as(usize, @intCast(x))] = .Empty;
+                self.map[y][x] = .Empty;
+                self.reset_positions();
             }
         }
         return loop_count;
     }
 
     pub fn has_loop(self: *Puzzle) !bool {
-        var visited_positions = std.hash_map.HashMap(Position, usize, std.hash_map.AutoContext(Position), 80).init(self.allocator.*);
-        defer visited_positions.deinit();
+        var visited_positions = std.hash_map.HashMap(Position, Direction, std.hash_map.AutoContext(Position), 80).init(self.allocator.*);
         while (0 <= self.next.x and self.next.x < self.map[0].len and 0 <= self.next.y and self.next.y < self.map.len) {
-            if (visited_positions.get(self.current)) |direction_index| {
-                if (direction_index == self.direction_index) {
+            if (visited_positions.get(self.current)) |direction| {
+                if (direction == self.direction) {
                     return true;
                 }
             }
-            try visited_positions.put(self.current, self.direction_index);
-            self.move_forward();
-            // std.debug.print("\x1b[2J\x1b[H", .{});
-            // for (self.map) |row| {
-            //     std.debug.print("{s}\n", .{row});
-            // }
-            // std.time.sleep(100 * 1000 * 1000);
+            if (self.map[@as(usize, @intCast(self.next.y))][@as(usize, @intCast(self.next.x))] == .Obstacle) {
+                self.rotate();
+            } else {
+                self.move_forward();
+                try visited_positions.put(self.current, self.direction);
+            }
         }
         return false;
     }
 
+    fn rotate(self: *Puzzle) void {
+        self.direction = switch (self.direction) {
+            .Up => .Right,
+            .Right => .Down,
+            .Down => .Left,
+            .Left => .Up,
+        };
+        self.next.x = self.current.x + Puzzle.directions[@intFromEnum(self.direction)].dx;
+        self.next.y = self.current.y + Puzzle.directions[@intFromEnum(self.direction)].dy;
+    }
+
     fn move_forward(self: *Puzzle) void {
-        if (self.map[@as(usize, @intCast(self.next.y))][@as(usize, @intCast(self.next.x))] == .Obstacle) {
-            self.direction_index = @mod(self.direction_index + 1, Puzzle.directions.len);
-            self.next.x = self.current.x + Puzzle.directions[self.direction_index].dx;
-            self.next.y = self.current.y + Puzzle.directions[self.direction_index].dy;
-            return;
-        }
         self.map[@as(usize, @intCast(self.current.y))][@as(usize, @intCast(self.current.x))] = .Empty;
-        self.current.x += Puzzle.directions[self.direction_index].dx;
-        self.current.y += Puzzle.directions[self.direction_index].dy;
+        self.current.x += Puzzle.directions[@intFromEnum(self.direction)].dx;
+        self.current.y += Puzzle.directions[@intFromEnum(self.direction)].dy;
         self.map[@as(usize, @intCast(self.current.y))][@as(usize, @intCast(self.current.x))] = .Guard;
-        self.next.x = self.current.x + Puzzle.directions[self.direction_index].dx;
-        self.next.y = self.current.y + Puzzle.directions[self.direction_index].dy;
+        self.next.x = self.current.x + Puzzle.directions[@intFromEnum(self.direction)].dx;
+        self.next.y = self.current.y + Puzzle.directions[@intFromEnum(self.direction)].dy;
     }
 
     fn read_data(allocator: Allocator, filename: []const u8) ![]u8 {
@@ -230,74 +249,34 @@ pub fn main() !void {
     defer puzzle.deinit();
 
     const positions_visited: usize = try puzzle.count_unique_positions_visited();
-    try std.testing.expect(positions_visited == 5409);
+    std.debug.assert(positions_visited == 5409);
     std.debug.print("positions_visited: {d}\n", .{positions_visited});
 
-    const possible_loop_count: usize = try puzzle.count_possible_loops_optimized();
-    std.debug.print("possible_loop_count: {d}\n", .{possible_loop_count});
-    try std.testing.expect(possible_loop_count == 6);
-}
-
-test "unique prositions visited by guard" {
-    var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "day06.test";
-
-    var puzzle = try Puzzle.init(&allocator, filename);
-    defer puzzle.deinit();
-
-    const positions_visited: usize = try puzzle.count_unique_positions_visited();
-    try std.testing.expect(positions_visited == 41);
-}
-
-test "has_loop check in test input" {
-    var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "day06.test";
-
-    var puzzle = try Puzzle.init(&allocator, filename);
-    defer puzzle.deinit();
-
-    const has_loop: bool = try puzzle.has_loop();
-    try std.testing.expect(has_loop == false);
-}
-
-test "has_loop check for two obstacle one after another without taking steps, and causing two turns" {
-    var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "day06.test";
-
-    var puzzle = try Puzzle.init(&allocator, filename);
-    defer puzzle.deinit();
-
-    puzzle.map[2][8] = .Obstacle;
-
-    const has_loop: bool = try puzzle.has_loop();
-    try std.testing.expect(has_loop == false);
-}
-
-test "possible loop count" {
-    var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "day06.test";
-
-    var puzzle = try Puzzle.init(&allocator, filename);
-    defer puzzle.deinit();
-
     const possible_loop_count: usize = try puzzle.count_possible_loops();
-    try std.testing.expect(possible_loop_count == 6);
+    std.debug.assert(possible_loop_count == 2022);
+    std.debug.print("possible_loop_count: {d}\n", .{possible_loop_count});
+
+    const possible_loop_count_optimized: usize = try puzzle.count_possible_loops_optimized();
+    std.debug.assert(possible_loop_count_optimized == 2022);
+    std.debug.print("possible_loop_count_optimized: {d}\n", .{possible_loop_count_optimized});
 }
 
-test "check for loop with obstacle at y:7,x:6 " {
+test "has loop check" {
     var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "day06.test";
+    const filename: [:0]const u8 = "day06.sample";
 
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
 
-    puzzle.map[7][6] = .Obstacle;
-
-    const loop_found: bool = try puzzle.has_loop();
+    var loop_found: bool = undefined;
+    loop_found = try puzzle.has_loop();
+    try std.testing.expect(loop_found == false);
+    puzzle.map[3][0] = .Obstacle;
+    loop_found = try puzzle.has_loop();
     try std.testing.expect(loop_found == true);
 }
 
-test "check presence in visited positions" {
+test "count unique visited position for test data" {
     var allocator = std.testing.allocator;
     const filename: [:0]const u8 = "day06.test";
 
@@ -306,21 +285,16 @@ test "check presence in visited positions" {
 
     const positions_visited: usize = try puzzle.count_unique_positions_visited();
     try std.testing.expect(positions_visited == 41);
-
-    try std.testing.expect(puzzle.visited_positions.get(Position{ .y = 7, .x = 6 }) == 1);
 }
 
-test "possible loop count optimized" {
+test "count unique visited position for input data" {
     var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "day06.test";
+    const filename: [:0]const u8 = "day06.input";
 
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
 
     const positions_visited: usize = try puzzle.count_unique_positions_visited();
-    try std.testing.expect(positions_visited == 41);
-
-    const possible_loop_count: usize = try puzzle.count_possible_loops_optimized();
-    std.debug.print("possible_loop_count: {d}\n", .{possible_loop_count});
-    try std.testing.expect(possible_loop_count == 6);
+    try std.testing.expect(positions_visited == 5409);
+    std.debug.print("positions_visited: {d}\n", .{positions_visited});
 }
