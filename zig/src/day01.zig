@@ -1,178 +1,113 @@
 const std = @import("std");
+const Allocator = std.mem.Allocator;
 const expect = std.testing.expect;
 
-pub fn main() !void {
-    const inputFile: std.fs.File = try std.fs.cwd().openFile(
-        "day01.input",
-        std.fs.File.OpenFlags{
-            .mode = .read_only,
-        },
-    );
-    defer inputFile.close();
+fn Pair(comptime T1: type, comptime T2: type) type {
+    return struct {
+        first: T1,
+        second: T2,
+    };
+}
 
-    const fileStats = try inputFile.stat();
+fn read_data(allocator: Allocator, file_name: []const u8) ![]u8 {
+    const file = try std.fs.cwd().openFile(file_name, std.fs.File.OpenFlags{
+        .mode = .read_only,
+    });
+    defer file.close();
+    const file_stats = try file.stat();
 
-    const buffer: []u8 = try std.heap.page_allocator.alloc(u8, fileStats.size);
-    defer std.heap.page_allocator.free(buffer);
+    const buffer: []u8 = try allocator.alloc(u8, file_stats.size);
+    const data_read = try file.read(buffer);
 
-    if (buffer.len != fileStats.size) {
-        return error.OutOfMemory;
+    std.debug.assert(data_read == file_stats.size);
+
+    return buffer;
+}
+
+fn parse_data(allocator: Allocator, buffer: []u8) !Pair([]i32, []i32) {
+    var splits = std.mem.split(u8, std.mem.trim(u8, buffer, " \n\t\r"), "\n");
+    var line_count: usize = 0;
+    while (splits.next()) |_| : (line_count += 1) {}
+    splits.reset();
+
+    const left = try allocator.alloc(i32, line_count);
+    const right = try allocator.alloc(i32, line_count);
+
+    var idx: usize = 0;
+    while (splits.next()) |line| : (idx += 1) {
+        var nums = std.mem.split(u8, std.mem.trim(u8, line, " \n\t\r"), "   ");
+        const left_num = try std.fmt.parseInt(i32, nums.next() orelse "", 10);
+        const right_num = try std.fmt.parseInt(i32, nums.next() orelse "", 10);
+        left[idx] = left_num;
+        right[idx] = right_num;
     }
 
-    const data_read = try inputFile.read(buffer);
-    std.debug.print("bytes read: {}\n", .{data_read});
+    return Pair([]i32, []i32){
+        .first = left,
+        .second = right,
+    };
+}
 
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer {
-        const status = gpa.deinit();
-        if (status == .leak) expect(false) catch @panic("gpa leaked");
+fn part1(lists: Pair([]i32, []i32)) u32 {
+    var totalDistance: u32 = 0;
+    for (0..lists.second.len) |index| {
+        totalDistance += @abs(lists.second[index] - lists.first[index]);
     }
+    return totalDistance;
+}
 
-    const allocator = gpa.allocator();
-
-    var leftList = std.ArrayList(i32).init(allocator);
-    defer leftList.deinit();
-
-    var rightList = std.ArrayList(i32).init(allocator);
-    defer rightList.deinit();
-
-    var count: usize = 0;
-    var toggle: bool = true;
-    var numStr: [5]u8 = .{ 0, 0, 0, 0, 0 };
-
-    // parse numbers into left and right lists
-    for (buffer) |char| {
-        if (std.ascii.isDigit(char)) {
-            numStr[count] = char;
-            count += 1;
-        } else {
-            if (std.mem.eql(u8, &numStr, &[_]u8{ 0, 0, 0, 0, 0 })) {
-                count = 0;
-                continue;
-            }
-            const num = try std.fmt.parseInt(i32, numStr[0..count], 10);
-            if (toggle) {
-                try leftList.append(num);
-            } else {
-                try rightList.append(num);
-            }
-            toggle = !toggle;
-            count = 0;
-            numStr = .{ 0, 0, 0, 0, 0 };
-        }
-    }
-
-    std.mem.sort(i32, leftList.items, {}, std.sort.asc(i32));
-    std.mem.sort(i32, rightList.items, {}, std.sort.asc(i32));
-
-    var totalDistance: isize = 0;
-
+fn part2(allocator: Allocator, lists: Pair([]i32, []i32)) !i32 {
     var numCounts = std.AutoHashMap(i32, i32).init(allocator);
     defer numCounts.deinit();
 
-    for (0..rightList.items.len) |index| {
-        totalDistance += @abs(rightList.items[index] - leftList.items[index]);
-        if (numCounts.get(rightList.items[index])) |numCount| {
-            try numCounts.put(rightList.items[index], numCount + 1);
+    for (lists.second) |item| {
+        if (numCounts.get(item)) |count| {
+            try numCounts.put(item, count + 1);
         } else {
-            try numCounts.put(rightList.items[index], 1);
+            try numCounts.put(item, 1);
         }
     }
-    std.debug.print("Part 1:\n", .{});
-    std.debug.print("Total distance: {d}\n", .{totalDistance});
-
     var totalSimilarity: i32 = 0;
-    for (leftList.items) |num| {
+    for (lists.first) |num| {
         totalSimilarity += (numCounts.get(num) orelse 0) * num;
     }
-    std.debug.print("Part 2:\n", .{});
-    std.debug.print("Total similarity: {d}\n", .{totalSimilarity});
+    return totalSimilarity;
+}
+
+pub fn main() !void {
+    const allocator = std.heap.page_allocator;
+
+    const data: []u8 = try read_data(allocator, "../../inputs/day01.input");
+    defer allocator.free(data);
+
+    const list_pair: Pair([]i32, []i32) = try parse_data(allocator, data);
+    std.mem.sort(i32, list_pair.first, {}, std.sort.asc(i32));
+    std.mem.sort(i32, list_pair.second, {}, std.sort.asc(i32));
+
+    const totalDistance = part1(list_pair);
+    const totalSimilarity = try part2(allocator, list_pair);
+
+    std.debug.assert(totalDistance == 1258579);
+    std.debug.assert(totalSimilarity == 23981443);
 }
 
 test "day1 test data" {
-    const inputFile: std.fs.File = try std.fs.cwd().openFile(
-        "day01.test",
-        std.fs.File.OpenFlags{
-            .mode = .read_only,
-        },
-    );
-    defer inputFile.close();
+    const allocator = std.testing.allocator;
 
-    const fileStats = try inputFile.stat();
+    const data: []u8 = try read_data(allocator, "../../tests/day01.test");
+    defer allocator.free(data);
 
-    const buffer: []u8 = try std.heap.page_allocator.alloc(u8, fileStats.size);
-    defer std.heap.page_allocator.free(buffer);
-
-    if (buffer.len != fileStats.size) {
-        return error.OutOfMemory;
-    }
-
-    const data_read = try inputFile.read(buffer);
-    std.debug.print("bytes read: {}\n", .{data_read});
-
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const list_pair: Pair([]i32, []i32) = try parse_data(allocator, data);
     defer {
-        const status = gpa.deinit();
-        if (status == .leak) expect(false) catch @panic("gpa leaked");
+        allocator.free(list_pair.first);
+        allocator.free(list_pair.second);
     }
+    std.mem.sort(i32, list_pair.first, {}, std.sort.asc(i32));
+    std.mem.sort(i32, list_pair.second, {}, std.sort.asc(i32));
 
-    const allocator = gpa.allocator();
+    const totalDistance = part1(list_pair);
+    const totalSimilarity = try part2(allocator, list_pair);
 
-    var leftList = std.ArrayList(i32).init(allocator);
-    defer leftList.deinit();
-
-    var rightList = std.ArrayList(i32).init(allocator);
-    defer rightList.deinit();
-
-    var count: usize = 0;
-    var toggle: bool = true;
-    var numStr: [5]u8 = .{ 0, 0, 0, 0, 0 };
-
-    // parse numbers into left and right lists
-    for (buffer) |char| {
-        if (std.ascii.isDigit(char)) {
-            numStr[count] = char;
-            count += 1;
-        } else {
-            if (std.mem.eql(u8, &numStr, &[_]u8{ 0, 0, 0, 0, 0 })) {
-                count = 0;
-                continue;
-            }
-            const num = try std.fmt.parseInt(i32, numStr[0..count], 10);
-            if (toggle) {
-                try leftList.append(num);
-            } else {
-                try rightList.append(num);
-            }
-            toggle = !toggle;
-            count = 0;
-            numStr = .{ 0, 0, 0, 0, 0 };
-        }
-    }
-
-    std.mem.sort(i32, leftList.items, {}, std.sort.asc(i32));
-    std.mem.sort(i32, rightList.items, {}, std.sort.asc(i32));
-
-    var totalDistance: isize = 0;
-
-    var numCounts = std.AutoHashMap(i32, i32).init(allocator);
-    defer numCounts.deinit();
-
-    for (0..rightList.items.len) |index| {
-        totalDistance += @abs(rightList.items[index] - leftList.items[index]);
-        if (numCounts.get(rightList.items[index])) |numCount| {
-            try numCounts.put(rightList.items[index], numCount + 1);
-        } else {
-            try numCounts.put(rightList.items[index], 1);
-        }
-    }
-    std.debug.print("Part 1:\n", .{});
-    std.debug.print("Total distance: {d}\n", .{totalDistance});
-
-    var totalSimilarity: i32 = 0;
-    for (leftList.items) |num| {
-        totalSimilarity += (numCounts.get(num) orelse 0) * num;
-    }
-    std.debug.print("Part 2:\n", .{});
-    std.debug.print("Total similarity: {d}\n", .{totalSimilarity});
+    try std.testing.expect(totalDistance == 11);
+    try std.testing.expect(totalSimilarity == 31);
 }
