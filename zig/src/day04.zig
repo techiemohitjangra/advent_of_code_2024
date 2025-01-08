@@ -54,13 +54,11 @@ fn part1(input: [][]const u8) i32 {
 
                 // check right
                 if (x + (match.len - 1) < line.len and std.mem.eql(u8, line[x .. x + match.len], match)) {
-                    // std.debug.print("right: {s} y: {d} x: {d}\n", .{ line[x .. x + match.len], y, x });
                     count += 1;
                 }
 
                 // check left
                 if (x >= (reverse.len - 1) and std.mem.eql(u8, line[x - (reverse.len - 1) .. x + 1], reverse)) {
-                    // std.debug.print("left: {s} y: {d} x: {d}\n", .{ line[x - (reverse.len - 1) .. x + 1], y, x });
                     count += 1;
                 }
 
@@ -73,14 +71,6 @@ fn part1(input: [][]const u8) i32 {
                     diff += 1;
                     if (diff == 4) {
                         count += 1;
-                        // std.debug.print("top: {c}{c}{c}{c} y: {d} x: {d}\n", .{
-                        //     input[y - 0][x],
-                        //     input[y - 1][x],
-                        //     input[y - 2][x],
-                        //     input[y - 3][x],
-                        //     y,
-                        //     x,
-                        // });
                         break;
                     }
                 }
@@ -94,14 +84,6 @@ fn part1(input: [][]const u8) i32 {
                     diff += 1;
                     if (diff == 4) {
                         count += 1;
-                        // std.debug.print("bottom: {c}{c}{c}{c} y: {d} x: {d}\n", .{
-                        //     input[y + 0][x],
-                        //     input[y + 1][x],
-                        //     input[y + 2][x],
-                        //     input[y + 3][x],
-                        //     y,
-                        //     x,
-                        // });
                         break;
                     }
                 }
@@ -115,14 +97,6 @@ fn part1(input: [][]const u8) i32 {
                     diff += 1;
                     if (diff == 4) {
                         count += 1;
-                        // std.debug.print("top-right: {c}{c}{c}{c} y: {d} x: {d}\n", .{
-                        //     input[y - 0][x + 0],
-                        //     input[y - 1][x + 1],
-                        //     input[y - 2][x + 2],
-                        //     input[y - 3][x + 3],
-                        //     y,
-                        //     x,
-                        // });
                         break;
                     }
                 }
@@ -136,14 +110,6 @@ fn part1(input: [][]const u8) i32 {
                     diff += 1;
                     if (diff == 4) {
                         count += 1;
-                        // std.debug.print("top-left: {c}{c}{c}{c} y: {d} x: {d}\n", .{
-                        //     input[y - 0][x - 0],
-                        //     input[y - 1][x - 1],
-                        //     input[y - 2][x - 2],
-                        //     input[y - 3][x - 3],
-                        //     y,
-                        //     x,
-                        // });
                         break;
                     }
                 }
@@ -157,14 +123,6 @@ fn part1(input: [][]const u8) i32 {
                     diff += 1;
                     if (diff == 4) {
                         count += 1;
-                        // std.debug.print("bottom-left: {c}{c}{c}{c} y: {d} x: {d}\n", .{
-                        //     input[y + 0][x - 0],
-                        //     input[y + 1][x - 1],
-                        //     input[y + 2][x - 2],
-                        //     input[y + 3][x - 3],
-                        //     y,
-                        //     x,
-                        // });
                         break;
                     }
                 }
@@ -178,14 +136,6 @@ fn part1(input: [][]const u8) i32 {
                     diff += 1;
                     if (diff == 4) {
                         count += 1;
-                        // std.debug.print("bottom-right: {c}{c}{c}{c} y: {d} x: {d}\n", .{
-                        //     input[y + 0][x + 0],
-                        //     input[y + 1][x + 1],
-                        //     input[y + 2][x + 2],
-                        //     input[y + 3][x + 3],
-                        //     y,
-                        //     x,
-                        // });
                         break;
                     }
                 }
