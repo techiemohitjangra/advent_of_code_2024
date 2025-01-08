@@ -1,2 +1,10 @@
 **/*.o
+c/*
+!c/*.c
+!c/*.cpp
 zig/.zig-cache/**/*
+zig/.zig-cache/*
+zig/.zig-cache
+zig/src/*
+zig/src/*.o
+!zig/src/*.zig
