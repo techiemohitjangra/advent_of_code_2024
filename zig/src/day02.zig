@@ -189,6 +189,5 @@ test {
     const pt1_result = part1(level_records);
     try expect(pt1_result == 2);
     const pt2_result = part2(level_records);
-    std.debug.print("{d}\n", .{pt2_result});
-    // try expect(pt2_result == 4);
+    try expect(pt2_result == 4);
 }
