@@ -90,59 +90,27 @@ fn part1(level_records: [][]i32) usize {
     return safe_count;
 }
 
-fn can_make_safe(record: []i32) bool {
-    if (is_safe(record[1..])) {
-        return true;
+fn can_make_safe(allocator: Allocator, record: []i32) !bool {
+    for (0..record.len) |i| {
+        var array_list = std.ArrayList(i32).init(allocator);
+        defer array_list.deinit();
+        try array_list.appendSlice(record);
+        _ = array_list.orderedRemove(i);
+        if (is_safe(array_list.items)) {
+            return true;
+        }
     }
-    if (is_safe(record[0 .. record.len - 1])) {
-        return true;
-    }
-    var left: usize = 0;
-    var middle: usize = 0;
-    var right: usize = 0;
 
-    var faulted: bool = false;
-    while (right < record.len) {
-        if (faulted) {
-            left += 2;
-            middle += 2;
-            right += 2;
-            continue;
-        }
-        if (record[left] == record[middle] or record[middle] == record[right]) {
-            if (faulted) {
-                return false;
-            } else {
-                faulted = true;
-            }
-        }
-        if (record[left] < record[middle] and record[middle] > record[right]) {
-            if (faulted) {
-                return false;
-            } else {
-                faulted = true;
-            }
-        } else if (record[left] > record[middle] and record[middle] < record[right]) {
-            if (faulted) {
-                return false;
-            } else {
-                faulted = true;
-            }
-        }
-        left += 1;
-        middle += 1;
-        right += 1;
-    }
-    return true;
+    return false;
 }
 
-fn part2(level_records: [][]i32) usize {
+fn part2(allocator: Allocator, level_records: [][]i32) !usize {
     var safe_count: usize = 0;
     for (level_records) |record| {
         if (is_safe(record)) {
             safe_count += 1;
         } else {
-            if (can_make_safe(record)) {
+            if (try can_make_safe(allocator, record)) {
                 safe_count += 1;
             }
         }
@@ -167,27 +135,27 @@ pub fn main() !void {
 
     const pt1_result = part1(level_records);
     std.debug.assert(pt1_result == 606);
-    const pt2_result = part2(level_records);
+    const pt2_result = try part2(allocator, level_records);
     std.debug.assert(pt2_result == 644);
 }
 
 test {
-    var test_allocator = std.testing.allocator;
+    var allocator = std.testing.allocator;
     const testInput: []const u8 = "../../tests/day02.test";
 
-    const data: []u8 = try read_data(test_allocator, testInput);
-    defer test_allocator.free(data);
+    const data: []u8 = try read_data(allocator, testInput);
+    defer allocator.free(data);
 
-    const level_records: [][]i32 = try parse_levels(test_allocator, data);
+    const level_records: [][]i32 = try parse_levels(allocator, data);
     defer {
         for (level_records) |levels| {
-            test_allocator.free(levels);
+            allocator.free(levels);
         }
-        test_allocator.free(level_records);
+        allocator.free(level_records);
     }
 
     const pt1_result = part1(level_records);
     try expect(pt1_result == 2);
-    const pt2_result = part2(level_records);
+    const pt2_result = try part2(allocator, level_records);
     try expect(pt2_result == 4);
 }
