@@ -9,7 +9,7 @@ fn read_data(allocator: *std.mem.Allocator, fileName: []const u8) ![]u8 {
             .mode = .read_only,
         },
     );
-    defer file.close;
+    defer file.close();
 
     const file_stats = try file.stat();
     const buffer: []u8 = try allocator.alloc(u8, file_stats.size);
@@ -177,40 +177,37 @@ fn part2(input: [][]const u8) i32 {
 
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
-    const buffer: []u8 = try read_data(&allocator, "day04.input");
+    const buffer: []u8 = try read_data(&allocator, "../../inputs/day04.input");
     defer allocator.free(buffer);
 
     const input: [][]const u8 = try parse_data(&allocator, buffer);
     defer allocator.free(input);
 
-    const part1Solution: i32 = part1(input);
-    assert(part1Solution == 2496);
-    std.debug.print("Part1: {d}\n", .{part1Solution});
+    const pt1_result: i32 = part1(input);
+    assert(pt1_result == 2496);
 
-    const part2Solution: i32 = part2(input);
-    assert(part1Solution == 1967);
-    std.debug.print("Part2: {d}\n", .{part2Solution});
+    const pt2_result: i32 = part2(input);
+    assert(pt2_result == 1967);
 }
 
 test "part1" {
     var test_allocator = std.testing.allocator;
-    const buffer: []u8 = try read_data(&test_allocator, "day04.test");
+    const buffer: []u8 = try read_data(&test_allocator, "../../tests/day04.test");
     defer test_allocator.free(buffer);
     const input: [][]const u8 = try parse_data(&test_allocator, buffer);
     defer test_allocator.free(input);
 
     const part1Solution: i32 = part1(input);
-    std.debug.print("Part1: {d}\n", .{part1Solution});
     try expect(part1Solution == 18);
 }
 
 test "part2" {
     var test_allocator = std.testing.allocator;
-    const buffer: []u8 = try read_data(&test_allocator, "day04.test");
+    const buffer: []u8 = try read_data(&test_allocator, "../../tests/day04.test");
     defer test_allocator.free(buffer);
     const input: [][]const u8 = try parse_data(&test_allocator, buffer);
     defer test_allocator.free(input);
 
     const part2Solution: i32 = part2(input);
-    try expect(part2Solution == 1967);
+    try expect(part2Solution == 9);
 }

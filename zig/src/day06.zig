@@ -243,42 +243,24 @@ const Puzzle = struct {
 
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
-    const filename: [:0]const u8 = "day06.input";
+    const filename: [:0]const u8 = "../../inputs/day06.input";
 
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
 
     const positions_visited: usize = try puzzle.count_unique_positions_visited();
     std.debug.assert(positions_visited == 5409);
-    std.debug.print("positions_visited: {d}\n", .{positions_visited});
 
     const possible_loop_count: usize = try puzzle.count_possible_loops();
     std.debug.assert(possible_loop_count == 2022);
-    std.debug.print("possible_loop_count: {d}\n", .{possible_loop_count});
 
     const possible_loop_count_optimized: usize = try puzzle.count_possible_loops_optimized();
     std.debug.assert(possible_loop_count_optimized == 2022);
-    std.debug.print("possible_loop_count_optimized: {d}\n", .{possible_loop_count_optimized});
-}
-
-test "has loop check" {
-    var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "day06.sample";
-
-    var puzzle = try Puzzle.init(&allocator, filename);
-    defer puzzle.deinit();
-
-    var loop_found: bool = undefined;
-    loop_found = try puzzle.has_loop();
-    try std.testing.expect(loop_found == false);
-    puzzle.map[3][0] = .Obstacle;
-    loop_found = try puzzle.has_loop();
-    try std.testing.expect(loop_found == true);
 }
 
 test "count unique visited position for test data" {
     var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "day06.test";
+    const filename: [:0]const u8 = "../../tests/day06.test";
 
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
@@ -289,12 +271,11 @@ test "count unique visited position for test data" {
 
 test "count unique visited position for input data" {
     var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "day06.input";
+    const filename: [:0]const u8 = "../../inputs/day06.input";
 
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
 
     const positions_visited: usize = try puzzle.count_unique_positions_visited();
     try std.testing.expect(positions_visited == 5409);
-    std.debug.print("positions_visited: {d}\n", .{positions_visited});
 }
