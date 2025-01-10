@@ -81,40 +81,74 @@ fn parse_data(allocator: Allocator, input_data: []u8) !Pair(std.AutoHashMap(i32,
     };
 }
 
-fn part1(input: Pair(std.AutoHashMap(i32, std.ArrayList(i32)), std.ArrayList([]i32))) i32 {
-    var result: i32 = 0;
-    updates: for (input.second.items) |updates| {
-        for (updates, 0..) |page, page_idx| {
-            if (input.first.get(page)) |list| {
-                for (list.items) |item| {
-                    for (updates[page_idx + 1 ..]) |page_after| {
-                        if (page_after == item) {
-                            continue :updates;
-                        }
+fn is_valid(updates: []i32, rules: std.AutoHashMap(i32, std.ArrayList(i32))) bool {
+    for (updates, 0..) |update, idx| {
+        if (rules.get(update)) |beforeItems| {
+            for (beforeItems.items) |before| {
+                for (updates[idx + 1 ..]) |after| {
+                    if (before == after) {
+                        return false;
                     }
                 }
             }
         }
-        result += updates[@as(usize, @intFromFloat(@as(f64, @floatFromInt(updates.len - 1)) / 2.0))];
+    }
+    return true;
+}
+
+fn part1(input: Pair(std.AutoHashMap(i32, std.ArrayList(i32)), std.ArrayList([]i32))) i32 {
+    var result: i32 = 0;
+    for (input.second.items) |updates| {
+        if (is_valid(updates, input.first)) {
+            result += updates[@as(usize, @intFromFloat(@as(f64, @floatFromInt(updates.len - 1)) / 2.0))];
+        }
     }
     return result;
 }
 
-fn part2(input: Pair(std.AutoHashMap(i32, std.ArrayList(i32)), std.ArrayList([]i32))) i32 {
-    var result: i32 = 0;
-    updates: for (input.second.items) |updates| {
-        for (updates, 0..) |page, page_idx| {
-            if (input.first.get(page)) |list| {
-                for (list.items) |item| {
-                    for (updates[page_idx + 1 ..]) |page_after| {
-                        if (page_after == item) {
-                            continue :updates;
-                        }
-                    }
+// def fix_update(update: List[int], rules: DefaultDict[int, List[int]]) -> List[int]:
+//     i = 0
+//     j = 0
+//     while i < len(update):
+//         j = i + 1
+//         while j < len(update):
+//             if update[j] in rules[update[i]]:
+//                 temp = update[i]
+//                 update[i] = update[j]
+//                 update[j] = temp
+//             else:
+//                 j += 1
+//         i += 1
+//     return update
+
+fn fix_order(update: *[]i32, rules: std.AutoHashMap(i32, std.ArrayList(i32))) void {
+    var i: usize = 0;
+    while (i < update.len) {
+        var j: usize = i + 1;
+        while (j < update.len) {
+            if (rules.get(update.*[i])) |before_items| {
+                if (std.mem.indexOf(i32, before_items.items, &[_]i32{update.*[j]})) |_| {
+                    const temp = update.*[i];
+                    update.*[i] = update.*[j];
+                    update.*[j] = temp;
+                } else {
+                    j += 1;
                 }
+            } else {
+                break;
             }
         }
-        result += updates[@as(usize, @intFromFloat(@as(f64, @floatFromInt(updates.len - 1)) / 2.0))];
+        i += 1;
+    }
+}
+
+fn part2(input: Pair(std.AutoHashMap(i32, std.ArrayList(i32)), std.ArrayList([]i32))) i32 {
+    var result: i32 = 0;
+    for (input.second.items) |*updates| {
+        if (!is_valid(updates.*, input.first)) {
+            fix_order(updates, input.first);
+            result += updates.*[@as(usize, @intFromFloat(@as(f64, @floatFromInt(updates.len - 1)) / 2.0))];
+        }
     }
     return result;
 }
@@ -139,7 +173,7 @@ pub fn main() !void {
     assert(pt1_result == 5166);
 
     const pt2_result = part2(data);
-    assert(pt2_result == 4697);
+    assert(pt2_result == 4679);
 }
 
 test "read_data" {
