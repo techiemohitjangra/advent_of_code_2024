@@ -5,6 +5,9 @@ c/*
 zig/.zig-cache/**/*
 zig/.zig-cache/*
 zig/.zig-cache
+zig/zig-out/**/*
+zig/zig-out/*
+zig/zig-out
 zig/src/*
 zig/src/*.o
 !zig/src/*.zig
