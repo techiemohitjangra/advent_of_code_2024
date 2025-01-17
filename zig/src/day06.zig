@@ -103,6 +103,7 @@ const Puzzle = struct {
 
     pub fn reset_positions(self: *Puzzle) void {
         self.map[@as(usize, @intCast(self.current.y))][@as(usize, @intCast(self.current.x))] = .Empty;
+        self.map[@as(usize, @intCast(self.start.y))][@as(usize, @intCast(self.start.x))] = .Guard;
         self.direction = .Up;
         self.current = self.start;
         self.next = Position{
@@ -111,7 +112,7 @@ const Puzzle = struct {
         };
     }
 
-    pub fn count_unique_positions_visited(self: *Puzzle) !usize {
+    fn find_visited_positions(self: *Puzzle) !void {
         while (0 <= self.next.x and self.next.x < self.map[0].len and 0 <= self.next.y and self.next.y < self.map.len) {
             if (self.map[@as(usize, @intCast(self.next.y))][@as(usize, @intCast(self.next.x))] == .Obstacle) {
                 self.rotate();
@@ -120,22 +121,27 @@ const Puzzle = struct {
                 try self.visited_positions.put(self.current, self.direction);
             }
         }
+        self.reset_positions();
+    }
+
+    pub fn part1(self: *Puzzle) !usize {
+        try self.find_visited_positions();
         return self.visited_positions.count();
     }
 
-    pub fn count_possible_loops_optimized(self: *Puzzle) !usize {
+    pub fn part2(self: *Puzzle) !usize {
         var loop_count: usize = 0;
         var visited_position_iterator = self.visited_positions.iterator();
         while (visited_position_iterator.next()) |item| {
-            const x = item.key_ptr.x;
+            self.reset_positions();
             const y = item.key_ptr.y;
+            const x = item.key_ptr.x;
             if (self.start.x == x and self.start.y == y) continue;
             self.map[@as(usize, @intCast(y))][@as(usize, @intCast(x))] = .Obstacle;
             if (try self.has_loop()) {
                 loop_count += 1;
             }
             self.map[@as(usize, @intCast(y))][@as(usize, @intCast(x))] = .Empty;
-            self.reset_positions();
         }
         return loop_count;
     }
@@ -159,6 +165,7 @@ const Puzzle = struct {
 
     pub fn has_loop(self: *Puzzle) !bool {
         var visited_positions = std.hash_map.HashMap(Position, Direction, std.hash_map.AutoContext(Position), 80).init(self.allocator.*);
+        defer visited_positions.deinit();
         while (0 <= self.next.x and self.next.x < self.map[0].len and 0 <= self.next.y and self.next.y < self.map.len) {
             if (visited_positions.get(self.current)) |direction| {
                 if (direction == self.direction) {
@@ -167,10 +174,10 @@ const Puzzle = struct {
             }
             if (self.map[@as(usize, @intCast(self.next.y))][@as(usize, @intCast(self.next.x))] == .Obstacle) {
                 self.rotate();
-            } else {
-                self.move_forward();
-                try visited_positions.put(self.current, self.direction);
+                continue;
             }
+            try visited_positions.put(self.current, self.direction);
+            self.move_forward();
         }
         return false;
     }
@@ -248,13 +255,10 @@ pub fn main() !void {
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
 
-    const positions_visited: usize = try puzzle.count_unique_positions_visited();
+    const positions_visited: usize = try puzzle.part1();
     std.debug.assert(positions_visited == 5409);
 
-    const possible_loop_count: usize = try puzzle.count_possible_loops();
-    std.debug.assert(possible_loop_count == 2022);
-
-    const possible_loop_count_optimized: usize = try puzzle.count_possible_loops_optimized();
+    const possible_loop_count_optimized: usize = try puzzle.part2();
     std.debug.assert(possible_loop_count_optimized == 2022);
 }
 
@@ -265,7 +269,7 @@ test "count unique visited position for test data" {
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
 
-    const positions_visited: usize = try puzzle.count_unique_positions_visited();
+    const positions_visited: usize = try puzzle.part1();
     try std.testing.expect(positions_visited == 41);
 }
 
@@ -276,6 +280,45 @@ test "count unique visited position for input data" {
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
 
-    const positions_visited: usize = try puzzle.count_unique_positions_visited();
+    const positions_visited: usize = try puzzle.part1();
     try std.testing.expect(positions_visited == 5409);
+}
+
+test "has loop unit test" {
+    var allocator = std.testing.allocator;
+    const filename: [:0]const u8 = "../../tests/day06.sample";
+
+    var puzzle = try Puzzle.init(&allocator, filename);
+    defer puzzle.deinit();
+
+    _ = try puzzle.part1();
+    puzzle.reset_positions();
+
+    puzzle.map[3][0] = .Obstacle;
+    const found_loop = try puzzle.has_loop();
+    try std.testing.expect(found_loop == true);
+}
+
+test "possible loop count for test data" {
+    var allocator = std.testing.allocator;
+    const filename: [:0]const u8 = "../../tests/day06.test";
+
+    var puzzle = try Puzzle.init(&allocator, filename);
+    defer puzzle.deinit();
+
+    _ = try puzzle.part1();
+    const possible_loop_count: usize = try puzzle.count_possible_loops();
+    try std.testing.expect(possible_loop_count == 6);
+}
+
+test "possible loop count for input data" {
+    var allocator = std.testing.allocator;
+    const filename: [:0]const u8 = "../../inputs/day06.input";
+
+    var puzzle = try Puzzle.init(&allocator, filename);
+    defer puzzle.deinit();
+
+    _ = try puzzle.part1();
+    const possible_loop_count: usize = try puzzle.part2();
+    try std.testing.expect(possible_loop_count == 2022);
 }
