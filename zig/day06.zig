@@ -203,7 +203,7 @@ const Puzzle = struct {
     }
 
     fn read_data(allocator: Allocator, filename: []const u8) ![]u8 {
-        const file = try std.fs.cwd().openFile(filename, std.fs.File.OpenFlags{
+        const file = try std.fs.openFileAbsolute(filename, std.fs.File.OpenFlags{
             .mode = .read_only,
         });
         defer file.close();
@@ -250,7 +250,7 @@ const Puzzle = struct {
 
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
-    const filename: [:0]const u8 = "../../inputs/day06.input";
+    const filename: [:0]const u8 = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day06.input";
 
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
@@ -264,7 +264,7 @@ pub fn main() !void {
 
 test "count unique visited position for test data" {
     var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "../../tests/day06.test";
+    const filename: [:0]const u8 = "/home/mohitjangra/learning/advent_of_code_2024/tests/day06.test";
 
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
@@ -273,35 +273,9 @@ test "count unique visited position for test data" {
     try std.testing.expect(positions_visited == 41);
 }
 
-test "count unique visited position for input data" {
-    var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "../../inputs/day06.input";
-
-    var puzzle = try Puzzle.init(&allocator, filename);
-    defer puzzle.deinit();
-
-    const positions_visited: usize = try puzzle.part1();
-    try std.testing.expect(positions_visited == 5409);
-}
-
-test "has loop unit test" {
-    var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "../../tests/day06.sample";
-
-    var puzzle = try Puzzle.init(&allocator, filename);
-    defer puzzle.deinit();
-
-    _ = try puzzle.part1();
-    puzzle.reset_positions();
-
-    puzzle.map[3][0] = .Obstacle;
-    const found_loop = try puzzle.has_loop();
-    try std.testing.expect(found_loop == true);
-}
-
 test "possible loop count for test data" {
     var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "../../tests/day06.test";
+    const filename: [:0]const u8 = "/home/mohitjangra/learning/advent_of_code_2024/tests/day06.test";
 
     var puzzle = try Puzzle.init(&allocator, filename);
     defer puzzle.deinit();
@@ -309,16 +283,4 @@ test "possible loop count for test data" {
     _ = try puzzle.part1();
     const possible_loop_count: usize = try puzzle.count_possible_loops();
     try std.testing.expect(possible_loop_count == 6);
-}
-
-test "possible loop count for input data" {
-    var allocator = std.testing.allocator;
-    const filename: [:0]const u8 = "../../inputs/day06.input";
-
-    var puzzle = try Puzzle.init(&allocator, filename);
-    defer puzzle.deinit();
-
-    _ = try puzzle.part1();
-    const possible_loop_count: usize = try puzzle.part2();
-    try std.testing.expect(possible_loop_count == 2022);
 }

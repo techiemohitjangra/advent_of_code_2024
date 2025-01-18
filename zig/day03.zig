@@ -5,9 +5,7 @@ const c = @cImport({
 });
 
 fn read_data(allocator: Allocator, file_name: []const u8) ![]u8 {
-    const file = try std.fs.cwd().openFile(file_name, std.fs.File.OpenFlags{
-        .mode = .read_only,
-    });
+    const file = try std.fs.openFileAbsolute(file_name, .{ .mode = .read_only });
     defer file.close();
 
     const file_stats = try file.stat();

@@ -11,7 +11,7 @@ fn Pair(comptime T1: type, comptime T2: type) type {
 }
 
 fn read_data(allocator: Allocator, file_name: []const u8) ![]u8 {
-    var file: std.fs.File = try std.fs.cwd().openFile(
+    var file: std.fs.File = try std.fs.openFileAbsolute(
         file_name,
         std.fs.File.OpenFlags{
             .mode = .read_only,
@@ -155,7 +155,7 @@ fn part2(input: Pair(std.AutoHashMap(i32, std.ArrayList(i32)), std.ArrayList([]i
 
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
-    const input_file: []const u8 = "../../inputs/day05.input";
+    const input_file: []const u8 = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day05.input";
 
     const buffer: []u8 = try read_data(allocator, input_file);
     defer allocator.free(buffer);
@@ -178,7 +178,7 @@ pub fn main() !void {
 
 test "read_data" {
     var allocator = std.testing.allocator;
-    const test_file = "../../tests/day05.test";
+    const test_file = "/home/mohitjangra/learning/advent_of_code_2024/tests/day05.test";
 
     const buffer: []u8 = try read_data(allocator, test_file);
     defer allocator.free(buffer);
@@ -207,9 +207,9 @@ test "read_data" {
     assert(data.second.items[5].len == 5);
 }
 
-test "part 1" {
+test "test data" {
     var allocator = std.testing.allocator;
-    const test_file = "../../tests/day05.test";
+    const test_file = "/home/mohitjangra/learning/advent_of_code_2024/tests/day05.test";
 
     const buffer: []u8 = try read_data(allocator, test_file);
     defer allocator.free(buffer);

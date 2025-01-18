@@ -3,7 +3,7 @@ const assert = std.debug.assert;
 const expect = std.testing.expect;
 
 fn read_data(allocator: *std.mem.Allocator, fileName: []const u8) ![]u8 {
-    var file: std.fs.File = try std.fs.cwd().openFile(
+    var file: std.fs.File = try std.fs.openFileAbsolute(
         fileName,
         std.fs.File.OpenFlags{
             .mode = .read_only,
@@ -177,7 +177,7 @@ fn part2(input: [][]const u8) i32 {
 
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
-    const buffer: []u8 = try read_data(&allocator, "../../inputs/day04.input");
+    const buffer: []u8 = try read_data(&allocator, "/home/mohitjangra/learning/advent_of_code_2024/inputs/day04.input");
     defer allocator.free(buffer);
 
     const input: [][]const u8 = try parse_data(&allocator, buffer);
@@ -192,7 +192,7 @@ pub fn main() !void {
 
 test "part1" {
     var test_allocator = std.testing.allocator;
-    const buffer: []u8 = try read_data(&test_allocator, "../../tests/day04.test");
+    const buffer: []u8 = try read_data(&test_allocator, "/home/mohitjangra/learning/advent_of_code_2024/tests/day04.test");
     defer test_allocator.free(buffer);
     const input: [][]const u8 = try parse_data(&test_allocator, buffer);
     defer test_allocator.free(input);
@@ -203,7 +203,7 @@ test "part1" {
 
 test "part2" {
     var test_allocator = std.testing.allocator;
-    const buffer: []u8 = try read_data(&test_allocator, "../../tests/day04.test");
+    const buffer: []u8 = try read_data(&test_allocator, "/home/mohitjangra/learning/advent_of_code_2024/tests/day04.test");
     defer test_allocator.free(buffer);
     const input: [][]const u8 = try parse_data(&test_allocator, buffer);
     defer test_allocator.free(input);

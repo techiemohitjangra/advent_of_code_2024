@@ -4,13 +4,7 @@ const assert = std.debug.assert;
 const expect = std.testing.expect;
 
 fn read_data(allocator: Allocator, fileName: []const u8) ![]u8 {
-    const file: std.fs.File = std.fs.cwd().openFile(
-        fileName,
-        std.fs.File.OpenFlags{ .mode = .read_only },
-    ) catch |err| {
-        std.debug.print("Failed to open file '{s}': {s}\n", .{ fileName, @errorName(err) });
-        return err;
-    };
+    const file: std.fs.File = try std.fs.openFileAbsolute(fileName, .{ .mode = .read_only });
     defer file.close();
     const fileStats: std.fs.File.Stat = try file.stat();
 
@@ -120,7 +114,7 @@ fn part2(allocator: Allocator, level_records: [][]i32) !usize {
 
 pub fn main() !void {
     var allocator = std.heap.page_allocator;
-    const inputFile: []const u8 = "../../inputs/day02.input";
+    const inputFile: []const u8 = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day02.input";
 
     const data: []u8 = try read_data(allocator, inputFile);
     defer allocator.free(data);
@@ -141,7 +135,7 @@ pub fn main() !void {
 
 test {
     var allocator = std.testing.allocator;
-    const testInput: []const u8 = "../../tests/day02.test";
+    const testInput: []const u8 = "/home/mohitjangra/learning/advent_of_code_2024/tests/day02.test";
 
     const data: []u8 = try read_data(allocator, testInput);
     defer allocator.free(data);

@@ -10,9 +10,7 @@ fn Pair(comptime T1: type, comptime T2: type) type {
 }
 
 fn read_data(allocator: Allocator, file_name: []const u8) ![]u8 {
-    const file = try std.fs.cwd().openFile(file_name, std.fs.File.OpenFlags{
-        .mode = .read_only,
-    });
+    const file = try std.fs.openFileAbsolute(file_name, .{ .mode = .read_only });
     defer file.close();
     const file_stats = try file.stat();
 
@@ -77,7 +75,7 @@ fn part2(allocator: Allocator, lists: Pair([]i32, []i32)) !i32 {
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
-    const data: []u8 = try read_data(allocator, "../../inputs/day01.input");
+    const data: []u8 = try read_data(allocator, "/home/mohitjangra/learning/advent_of_code_2024/inputs/day01.input");
     defer allocator.free(data);
 
     const list_pair: Pair([]i32, []i32) = try parse_data(allocator, data);
@@ -94,7 +92,7 @@ pub fn main() !void {
 test "day1 test data" {
     const allocator = std.testing.allocator;
 
-    const data: []u8 = try read_data(allocator, "../../tests/day01.test");
+    const data: []u8 = try read_data(allocator, "/home/mohitjangra/learning/advent_of_code_2024/tests/day01.test");
     defer allocator.free(data);
 
     const list_pair: Pair([]i32, []i32) = try parse_data(allocator, data);
