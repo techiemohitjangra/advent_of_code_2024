@@ -1,15 +1,16 @@
+#include <cassert>
 #include <cstdint>
+#include <cstring>
 #include <exception>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <string_view>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
-using std::cout;
-using std::endl;
 using std::string;
 using std::vector;
 
@@ -286,12 +287,24 @@ class Puzzle {
     }
 };
 
-int main() {
-    // std::string filename = "../tests/day06.test";
-    std::string filename = "../inputs/day06.input";
-    Puzzle p = Puzzle(filename);
-    std::cout << p.part1() << std::endl;
-    p.reset();
-    std::cout << p.part2() << std::endl;
+int main(int argc, char **argv) {
+    std::string filename;
+    if (argc == 2) {
+        if (strcmp(argv[1], "input") == 0) {
+            filename = "/home/mohitjangra/learning/advent_of_code_2024/inputs/"
+                       "day06.input";
+            Puzzle p = Puzzle(filename);
+            assert(p.part1() == 5409);
+            p.reset();
+            assert(p.part2() == 2022);
+        } else {
+            filename = "/home/mohitjangra/learning/advent_of_code_2024/tests/"
+                       "day06.test";
+            Puzzle p = Puzzle(filename);
+            assert(p.part1() == 41);
+            p.reset();
+            assert(p.part2() == 6);
+        }
+    }
     return 0;
 }
