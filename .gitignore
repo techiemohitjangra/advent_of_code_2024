@@ -1,12 +1,18 @@
-**/*.o
+# c
 c/*
+c/*.o
 !c/*.c
-!c/*.cpp
-zig/.zig-cache/**/*
-zig/.zig-cache/*
+!c++/Makefile
+
+# c++
+c++/*
+c++/*.o
+!c++/*.cpp
+!c++/*.c++
+!c++/Makefile
+
+# zig
 zig/.zig-cache
-zig/zig-out/**/*
-zig/zig-out/*
 zig/zig-out
 zig/src/*
 zig/src/*.o
