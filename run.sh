@@ -1,41 +1,49 @@
 #!/usr/bin/env bash
 
-# run python files
-pushd ./python &>/dev/null
-python_files=$(find . -maxdepth 1 -type f)
-for file in $python_files
-do
-    if [[ $1 == "test" ]]; then
-        failed=$(python3 $file test &>/dev/null && echo $?)
-        if [[ $failed != 0 ]]; then
-            echo "$file failed"
+if [[ $1 == "python" ]]; then
+    # run python files
+    python_files=$(find python -maxdepth 1 -type f)
+    for file in $python_files
+    do
+        if [[ $2 == "test" ]]; then
+            failed=$(python3 $file test &>/dev/null && echo $?)
+            if [[ $failed != 0 ]]; then
+                echo "$file test failed"
+            else
+                echo "$file tested successfully"
+            fi
         fi
-    fi
-    if [[ $1 == "input" ]]; then
-        failed=$(python3 $file input &>/dev/null && echo $?)
-        if [[ $failed != 0 ]]; then
-            echo "$file failed"
+        if [[ $2 == "input" ]]; then
+            failed=$(python3 $file input &>/dev/null && echo $?)
+            if [[ $failed != 0 ]]; then
+                echo "$file compilation or execution failed"
+            else
+                echo "$file compiled and executed successfully"
+            fi
         fi
-    fi
-done
-popd &>/dev/null
+    done
+fi
 
-# run zig files
-# pushd ./zig/src &>/dev/null
-# zig_files=$(find . -maxdepth 1 -type f)
-# for file in $zig_files
-# do
-#     if [[ $1 == "test" ]]; then
-#         failed=$(zig test $file &>/dev/null && echo $?)
-#         if [[ $failed != 0 ]]; then
-#             echo "$file failed"
-#         fi
-#     fi
-#     if [[ $1 == "input" ]]; then
-#         failed=$(zig build-exe -OReleaseFast $file &>/dev/null && ./$(echo "$filename" | cut -f 1 -d '.') && echo $?)
-#         if [[ $failed != 0 ]]; then
-#             echo "$file failed"
-#         fi
-#     fi
-# done
-# popd &>/dev/null
+if [[ $1 == "zig" ]]; then
+    # run zig files
+    zig_files=$(find zig -maxdepth 1 -type f)
+    for file in $zig_files
+    do
+        if [[ $2 == "test" ]]; then
+            failed=$(zig test $file &>/dev/null && echo $?)
+            if [[ $failed != 0 ]]; then
+                echo "$file test failed"
+            else
+                echo "$file tested successfully"
+            fi
+        fi
+        if [[ $2 == "input" ]]; then
+            failed=$(zig run -ODebug $file &>/dev/null && echo $?)
+            if [[ $failed != 0 ]]; then
+                echo "$file compilation or execution failed"
+            else
+                echo "$file compiled and executed successfully"
+            fi
+        fi
+    done
+fi
