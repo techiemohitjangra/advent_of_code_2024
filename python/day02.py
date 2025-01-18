@@ -77,8 +77,8 @@ def part2(records: List[List[int]]) -> int:
 
 
 if __name__ == "__main__":
-    input_file: str = "../inputs/day02.input"
-    test_file: str = "../tests/day02.test"
+    input_file: str = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day02.input"
+    test_file: str = "/home/mohitjangra/learning/advent_of_code_2024/tests/day02.test"
 
     mode = os.sys.argv[1] if len(os.sys.argv) > 1 else "test"
     records: List[List[int]]

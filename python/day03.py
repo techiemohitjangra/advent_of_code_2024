@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 
 
 def read_data(file_name: str) -> str:
@@ -27,9 +28,9 @@ def part2(data: str) -> int:
 
 
 if __name__ == "__main__":
-    input_file: str = "../inputs/day03.input"
-    test_file1: str = "../tests/day03.test1"
-    test_file2: str = "../tests/day03.test2"
+    input_file: str = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day03.input"
+    test_file1: str = "/home/mohitjangra/learning/advent_of_code_2024/tests/day03.test1"
+    test_file2: str = "/home/mohitjangra/learning/advent_of_code_2024/tests/day03.test2"
 
     mode = os.sys.argv[1] if len(os.sys.argv) > 1 else "test"
     data: str
@@ -46,3 +47,5 @@ if __name__ == "__main__":
         p2_result = part2(test_data2)
         assert p1_result == 161
         assert p2_result == 48
+    else:
+        print(f"Usage: {os.sys.argv[0]} [test|input]", file=sys.stderr)

@@ -1,46 +1,29 @@
 import os
+import sys
 from typing import List, DefaultDict
 from collections import defaultdict
 
 
-class TreeNode:
-    value: int
-    multipliedNode = None
-    addedNode = None
-    result: int = 0
-
-    def __init__(self, value: int):
-        value: int
-
-
 def read_data(file_name: str) -> DefaultDict[int, List[int]]:
-    lines: List[int] = []
+    lines: List[str] = []
     with open(file_name, "r") as file:
         lines = [line.strip() for line in file.readlines()]
 
     calibrations: DefaultDict[int, List[int]] = defaultdict(list)
     for line in lines:
         values = line.split(':')
-        calibrations[int(values[0])] = [int(value)
-                                        for value in values[1].strip().split()]
+        calibrations[int(values[0].strip())] = [int(value.strip())
+                                                for value in values[1].strip().split()]
 
     return calibrations
 
 
-def construct_tree(root: TreeNode, items: List[int]) -> TreeNode:
-    if root is None and len(items) > 0:
-        root = TreeNode(items[0])
-        items.pop(0)
-        construct_tree(root.addedNode, items)
-        construct_tree(root.multipliedNode, items)
-    return root
+def two_operator_check(target: int, nums: List[int], result: int):
+    pass
 
 
-def print_tree(root: TreeNode, spacer: str):
-    if root is not None:
-        print(root.value)
-        print_tree(root.addedNode, spacer + "    ")
-        print_tree(root.multipliedNode, spacer + "    ")
+def three_operator_check(target: int, nums: List[int], result: int):
+    pass
 
 
 def part1(calibrations: DefaultDict[int, List[int]]) -> int:
@@ -52,21 +35,22 @@ def part2(calibrations: DefaultDict[int, List[int]]) -> int:
 
 
 if __name__ == "__main__":
-    input_file: str = "../inputs/day07.input"
-    test_file: str = "../tests/day07.test"
+    input_file: str = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day07.input"
+    test_file: str = "/home/mohitjangra/learning/advent_of_code_2024/tests/day07.test"
 
     mode = os.sys.argv[1] if len(os.sys.argv) > 1 else "test"
     calibrations: DefaultDict[int, List[int]]
     if mode.strip().lower() == "input":
         calibrations = read_data(input_file)
+        pt1_result = part1(calibrations)
+        pt2_result = part2(calibrations)
+        assert pt1_result == 882304362421
+        assert pt2_result == 145149066755184
     elif mode.strip().lower() == "test":
         calibrations = read_data(test_file)
-
-    key = [key for key in calibrations.keys()][0]
-    root = construct_tree(None, calibrations[key])
-    print_tree(root, "")
-
-    # p1_result = part1(calibrations)
-    # p2_result = part2(calibrations)
-    # print("Solution Part1: ", p1_result)
-    # print("Solution Part2: ", p2_result)
+        pt1_result = part1(calibrations)
+        pt2_result = part2(calibrations)
+        assert pt1_result == 3749
+        assert pt2_result == 11387
+    else:
+        print(f"Usage: {os.sys.argv[0]} [test|input]", file=sys.stderr)

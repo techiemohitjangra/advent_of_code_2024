@@ -1,5 +1,6 @@
 from typing import List
 import os
+import sys
 
 
 def read_data(file_name: str) -> List[str]:
@@ -110,8 +111,8 @@ def part2(input: List[str]) -> int:
 
 
 if __name__ == "__main__":
-    input_file: str = "../inputs/day04.input"
-    test_file: str = "../tests/day04.test"
+    input_file: str = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day04.input"
+    test_file: str = "/home/mohitjangra/learning/advent_of_code_2024/tests/day04.test"
 
     mode = os.sys.argv[1] if len(os.sys.argv) > 1 else "test"
     records: List[List[int]]
@@ -127,3 +128,5 @@ if __name__ == "__main__":
         p2_result = part2(records)
         assert p1_result == 18
         assert p2_result == 9
+    else:
+        print(f"Usage: {os.sys.argv[0]} [test|input]", file=sys.stderr)

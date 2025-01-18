@@ -1,4 +1,5 @@
 import os
+import sys
 from typing import List, DefaultDict, Tuple
 from collections import defaultdict
 
@@ -64,14 +65,13 @@ def part2(updates: List[List[int]], rules: DefaultDict[int, List[int]]) -> int:
         isValid: bool = is_valid_update(update, rules)
         if not isValid:
             res = fix_update(update.copy(), rules)
-            print(update, res)
             middle_total += res[len(res)//2]
     return middle_total
 
 
 if __name__ == "__main__":
-    input_file: str = "../inputs/day05.input"
-    test_file: str = "../tests/day05.test"
+    input_file: str = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day05.input"
+    test_file: str = "/home/mohitjangra/learning/advent_of_code_2024/tests/day05.test"
 
     mode = os.sys.argv[1] if len(os.sys.argv) > 1 else "test"
     updates: List[List[int]]
@@ -88,3 +88,5 @@ if __name__ == "__main__":
         p2_result = part2(update, rules)
         assert p1_result == 143
         assert p2_result == 123
+    else:
+        print(f"Usage: {os.sys.argv[0]} [test|input]", file=sys.stderr)

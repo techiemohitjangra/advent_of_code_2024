@@ -1,5 +1,6 @@
 from typing import List, Tuple
 import os
+import sys
 
 
 def read_data(file_name: str) -> Tuple[List[int], List[int]]:
@@ -36,8 +37,8 @@ def part2(left_list: List[int], right_list: List[int]) -> int:
 
 
 if __name__ == "__main__":
-    input_file: str = "../inputs/day01.input"
-    test_file: str = "../tests/day01.test"
+    input_file: str = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day01.input"
+    test_file: str = "/home/mohitjangra/learning/advent_of_code_2024/tests/day01.test"
 
     mode = os.sys.argv[1] if len(os.sys.argv) > 1 else "test"
     if mode.strip().lower() == "input":
@@ -57,3 +58,5 @@ if __name__ == "__main__":
     elif mode.strip().lower() == "test":
         assert p1_result == 11
         assert p2_result == 31
+    else:
+        print(f"Usage: {os.sys.argv[0]} [test|input]", file=sys.stderr)

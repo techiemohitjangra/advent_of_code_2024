@@ -1,4 +1,5 @@
 import os
+import sys
 
 from typing import List, Tuple, DefaultDict
 from collections import defaultdict
@@ -149,8 +150,8 @@ def part2(mapped_area: List[List[str]]) -> int:
 
 
 if __name__ == "__main__":
-    input_file: str = "../inputs/day06.input"
-    test_file: str = "../tests/day06.test"
+    input_file: str = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day06.input"
+    test_file: str = "/home/mohitjangra/learning/advent_of_code_2024/tests/day06.test"
 
     mode = os.sys.argv[1] if len(os.sys.argv) > 1 else "test"
     mapped_area: List[List[str]]
@@ -166,6 +167,5 @@ if __name__ == "__main__":
         p2_result = part2(copy.deepcopy(mapped_area))
         assert p1_result == 41
         assert p2_result == 6
-
-    print("Solution Part1: ", p1_result)
-    print("Solution Part2: ", p2_result)
+    else:
+        print(f"Usage: {os.sys.argv[0]} [test|input]", file=sys.stderr)
