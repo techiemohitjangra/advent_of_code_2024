@@ -18,20 +18,48 @@ def read_data(file_name: str) -> DefaultDict[int, List[int]]:
     return calibrations
 
 
-def two_operator_check(target: int, nums: List[int], result: int):
-    pass
+def two_operator_check(target: int, nums: List[int], result: int) -> bool:
+    if result == target and len(nums) == 0:
+        return True
+    if len(nums) < 1:
+        return False
+    add = two_operator_check(target, nums[1:], result + nums[0])
+    mult = two_operator_check(target, nums[1:], result * nums[0])
+    if add or mult:
+        return True
+    return False
 
 
-def three_operator_check(target: int, nums: List[int], result: int):
-    pass
+def three_operator_check(target: int, nums: List[int], result: int) -> bool:
+    if target == result and len(nums) == 0:
+        return True
+    if len(nums) < 1:
+        return False
+    add: bool = three_operator_check(target, nums[1:], result + nums[0])
+    multi: bool = three_operator_check(target, nums[1:], result * nums[0])
+    concat: bool = three_operator_check(
+        target, nums[1:], int(str(result) + str(nums[0])))
+    if add or multi or concat:
+        return True
+    return False
 
 
 def part1(calibrations: DefaultDict[int, List[int]]) -> int:
-    pass
+    res: int = 0
+    for target, nums in calibrations.items():
+        if two_operator_check(target, nums[1:], nums[0]):
+            res += target
+    return res
 
 
 def part2(calibrations: DefaultDict[int, List[int]]) -> int:
-    pass
+    res: int = 0
+    for target, nums in calibrations.items():
+        if two_operator_check(target, nums[1:], nums[0]):
+            res += target
+        elif three_operator_check(target, nums[1:], nums[0]):
+            res += target
+    return res
 
 
 if __name__ == "__main__":
