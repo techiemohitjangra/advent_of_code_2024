@@ -1,6 +1,20 @@
 import os
 import sys
-from typing import List, Optional
+from typing import List, Optional, Union
+
+
+class FilePage:
+    file_id: int
+    file_size: int
+    space_after: int
+
+    def __init__(self, file_id: int, file_size: int, space_after: int = 0):
+        self.file_id = file_id
+        self.file_size = file_size
+        self.space_after = space_after
+
+    def __repr__(self) -> str:
+        return str(self.file_id) * self.file_size + '.' * self.space_after
 
 
 def read_data(file_name: str) -> str:
@@ -25,11 +39,22 @@ def uncompress_memory(data: str) -> List[str]:
     return memory
 
 
-def calculate_checksum(memory: List[str]) -> int:
+def calculate_checksum(memory: Union[List[str], List[FilePage]]) -> int:
     checksum: int = 0
-    first_blank = memory.index(".")
-    for idx, value in enumerate(memory[:first_blank]):
-        checksum += idx * int(value)
+    if memory is not None and all(isinstance(file_page, FilePage) for file_page in memory):
+        idx: int = 0
+        for file_page in memory:
+            start_idx = idx
+            for i in range(start_idx, start_idx + file_page.file_size):
+                checksum += idx * file_page.file_id
+                idx += 1
+            idx += file_page.space_after
+    elif memory is not None and all(isinstance(file_page, str) for file_page in memory):
+        first_blank = memory.index(".")
+        for idx, value in enumerate(memory[:first_blank]):
+            checksum += idx * int(value)
+    else:
+        raise Exception("InvalidType")
     return checksum
 
 
@@ -49,60 +74,39 @@ def part1(memory: List[str]) -> int:
     return calculate_checksum(memory)
 
 
-class Sector:
-    sector_type: str
-    start: int
-    len: int
-    id: Optional[int]
-
-    def __init__(self, sector_type: str, start: int, len: int, id: int):
-        self.sector_type = sector_type
-        self.start = start
-        self.len = len
-        self.id = id
-
-    def __repr__(self) -> str:
-        if self.id:
-            return f"{self.id}"*self.len
-        else:
-            return "." * self.len
-
-
-def get_memory_sectors(data: str) -> List[Sector]:
-    memory_sectors: List[Sector] = []
+def construct_file_pages(data: str) -> List[FilePage]:
+    file_pages: List[FilePage] = []
     file_id: int = 0
-    isFile: bool = True
-    start_idx: int = 0
     for idx, char in enumerate(data):
-        if int(char) == 0:
-            continue
-        if (isFile):
-            memory_sectors.append(
-                Sector("file", start_idx, int(char), file_id))
-            start_idx += int(char)
-            isFile = False
+        file: FilePage = None
+        if idx % 2 == 0:
+            file = FilePage(file_id, int(char))
+            file_pages.append(file)
             file_id += 1
         else:
-            memory_sectors.append(Sector("blank", start_idx, int(char), None))
-            start_idx += int(char)
-            isFile = True
-    return memory_sectors
+            file_pages[-1].space_after = int(char)
+    return file_pages
 
 
-def part2(memory_sectors: List[str]) -> int:
-    start: int = 0
-    end: int = len(memory_sectors)-1
-    while start < end:
-        while memory_sectors[start][0] != ".":
+def part2(file_pages: List[FilePage]) -> int:
+    end = len(file_pages) - 1
+    while end > 0:
+        start = 0
+        while file_pages[start].space_after < file_pages[end].file_size and start < end:
             start += 1
-        while not memory_sectors[end][0].isdigit():
+        if start >= end:
             end -= 1
-        file_len: int = 1
-        file_id = memory_sectors[end]
-        temp_idx: int = end
-        while memory_sectors[temp_idx] == file_id:
-            temp_idx -= 1
-            file_len += 1
+            continue
+        end_page = file_pages[end]
+        file_pages[end-1].space_after += file_pages[end].file_size + \
+            file_pages[end].space_after
+        end_page.space_after = file_pages[start].space_after - \
+            end_page.file_size
+        file_pages.remove(file_pages[end])
+        file_pages[start].space_after = 0
+        file_pages.insert(start+1, end_page)
+
+    return calculate_checksum(file_pages)
 
 
 if __name__ == "__main__":
@@ -117,10 +121,9 @@ if __name__ == "__main__":
         pt1_result = part1(uncompressed)
         assert pt1_result == 6330095022244
 
-        memory_sectors = get_memory_sectors(compressed_memory)
-        pt2_result = part2(memory_sectors)
-        print(pt2_result)
-        # assert pt2_result ==
+        file_pages: List[FilePage] = construct_file_pages(compressed_memory)
+        pt2_result = part2(file_pages)
+        assert pt2_result == 6359491814941
     elif mode.strip().lower() == "test":
         compressed_memory = read_data(test_file)
 
@@ -130,12 +133,10 @@ if __name__ == "__main__":
         pt1_result = part1(uncompressed)
         assert pt1_result == 1928
 
-        memory_sectors = get_memory_sectors(compressed_memory)
-        for sector in memory_sectors:
-            print(sector, end="")
-        print()
-        # pt2_result = part2(memory_sectors)
-        # print(memory_sectors)
+        file_pages: List[FilePage] = construct_file_pages(compressed_memory)
+        assert "".join(
+            [str(page) for page in file_pages]) == "00...111...2...333.44.5555.6666.777.888899"
+        pt2_result = part2(file_pages)
         assert pt2_result == 2858
     else:
         print(f"Usage: {os.sys.argv[0]} [test|input]", file=sys.stderr)
