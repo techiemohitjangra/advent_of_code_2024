@@ -26,23 +26,6 @@ fn parse_data(allocator: Allocator, data: []const u8) !std.DoublyLinkedList(u32)
     return list;
 }
 
-pub fn main() !void {
-    const allocator = std.heap.page_allocator;
-    const filename: []const u8 = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day11.input";
-    const data = try read_data(allocator, filename);
-    defer allocator.free(data);
-
-    const list = try parse_data(allocator, data);
-    defer {
-        var temp: ?*std.DoublyLinkedList(u32).Node = undefined;
-        var it = list.first;
-        while (it) |node| : (it = temp) {
-            temp = node.next;
-            allocator.destroy(node);
-        }
-    }
-}
-
 fn blink(allocator: Allocator, list: std.DoublyLinkedList(u32)) !std.DoublyLinkedList(u32) {
     var it = list.first;
     while (it) |node| : (it = node.next) {
@@ -74,10 +57,28 @@ fn part1(allocator: Allocator, list: std.DoublyLinkedList(u32), blink_count: usi
         it = temp_list.first;
         while (it) |node| : (it = node.next) {
             std.debug.print("{} ", .{node.data});
+            try blink(allocator, list);
         }
         std.debug.print("\n", .{});
     }
     return temp_list.len;
+}
+
+pub fn main() !void {
+    const allocator = std.heap.page_allocator;
+    const filename: []const u8 = "/home/mohitjangra/learning/advent_of_code_2024/inputs/day11.input";
+    const data = try read_data(allocator, filename);
+    defer allocator.free(data);
+
+    const list = try parse_data(allocator, data);
+    defer {
+        var temp: ?*std.DoublyLinkedList(u32).Node = undefined;
+        var it = list.first;
+        while (it) |node| : (it = temp) {
+            temp = node.next;
+            allocator.destroy(node);
+        }
+    }
 }
 
 test {
